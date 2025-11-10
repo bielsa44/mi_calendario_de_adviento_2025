@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario de Adviento 2025</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de fuentes de Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Mountains+of+Christmas:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Estilo personalizado para la fuente del título */
+        .font-christmas {
+            font-family: 'Mountains of Christmas', cursive;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-red-900 text-white min-h-screen flex items-center justify-center p-4">
+
+    <!-- Contenedor Principal -->
+    <div class="w-full max-w-4xl mx-auto">
+
+        <!-- 1. Contenedor del Formulario (Visible al inicio) -->
+        <div id="form-container" class="bg-white/10 backdrop-blur-md p-8 sm:p-12 rounded-2xl shadow-xl border border-white/20">
+            <h1 class="font-christmas text-5xl sm:text-7xl text-center text-yellow-300 mb-4">¡Calendario de Adviento!</h1>
+            <p class="text-center text-lg text-yellow-100/90 mb-8">Regístrate gratis para desbloquear tus 24 sorpresas diarias.</p>
+            
+            <form id="login-form">
+                <div class="mb-5">
+                    <label for="name" class="block text-sm font-medium text-yellow-200 mb-2">Tu Nombre</label>
+                    <input type="text" id="name" name="name" placeholder="Ej: Papá Noel" required 
+                           class="w-full p-3 rounded-lg bg-white/90 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-yellow-400/50 transition duration-300">
+                </div>
+                <div class="mb-8">
+                    <label for="email" class="block text-sm font-medium text-yellow-200 mb-2">Tu Correo Electrónico</label>
+                    <input type="email" id="email" name="email" placeholder="ej: santa@polo.norte" required 
+                           class="w-full p-3 rounded-lg bg-white/90 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-yellow-400/50 transition duration-300">
+                </div>
+                <button type="submit" 
+                        class="w-full bg-yellow-400 text-red-900 font-bold text-lg p-4 rounded-lg shadow-lg transform transition duration-300 hover:bg-yellow-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-yellow-400/50">
+                    Acceder a las Sorpresas 🎁
+                </button>
+            </form>
+            <p class="text-center text-xs text-yellow-100/70 mt-6">Valoramos tu privacidad. No compartiremos tus datos.</p>
+        </div>
+
+        <!-- 2. Contenedor del Calendario (Oculto al inicio) -->
+        <div id="calendar-container" class="hidden">
+            <h1 class="font-christmas text-6xl sm:text-8xl text-center text-yellow-300 mb-2">¡Feliz Adviento, <span id="user-name" class="text-white"></span>!</h1>
+            <p class="text-center text-lg text-yellow-100/90 mb-8">Haz clic en el día de hoy para ver tu sorpresa.</p>
+            
+            <!-- Rejilla del Calendario -->
+            <div id="calendar-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 p-4 bg-white/10 backdrop-blur-md rounded-2xl shadow-inner border border-white/20">
+                <!-- Las puertas se generan con JavaScript -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 3. Contenedor del Modal (Oculto por defecto) -->
+    <div id="modal-container" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white text-gray-900 p-8 rounded-2xl shadow-xl w-full max-w-md transform transition-all scale-95 opacity-0" id="modal-box">
+            <h2 class="font-christmas text-5xl text-red-800 mb-4" id="modal-day"></h2>
+            <img id="modal-image" src="" alt="Sorpresa" class="w-full h-48 object-cover rounded-lg mb-4">
+            <p class="text-lg mb-6" id="modal-content"></p>
+
+            <!-- ✨ Contenedor de Gemini (NUEVO) -->
+            <div class="mt-6 space-y-4">
+                <!-- Botón de Gemini -->
+                <button id="gemini-button" class="w-full bg-blue-600 text-white font-bold p-3 rounded-lg shadow-lg transform transition duration-300 hover:bg-blue-500 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-600/50">
+                    <!-- El texto se pondrá desde JS -->
+                </button>
+                
+                <!-- Indicador de Carga -->
+                <div id="gemini-loading" class="hidden text-center py-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-red-800 mx-auto"></div>
+                    <p class="mt-2 text-sm text-gray-600">Generando sorpresa...</p>
+                </div>
+
+                <!-- Contenedor de Resultado -->
+                <div id="gemini-result-container" class="hidden bg-gray-100 p-4 rounded-lg text-gray-800 text-sm max-h-40 overflow-y-auto border border-gray-300">
+                    <!-- El resultado se pondrá desde JS -->
+                </div>
+            </div>
+
+            <!-- Botón de Cerrar (Existente) -->
+            <button id="close-modal-button" 
+                    class="mt-6 w-full bg-red-800 text-white font-bold p-3 rounded-lg shadow-lg transform transition duration-300 hover:bg-red-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-800/50">
+                Cerrar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Referencias a elementos del DOM ---
+        const formContainer = document.getElementById('form-container');
+        const calendarContainer = document.getElementById('calendar-container');
+        const loginForm = document.getElementById('login-form');
+        const userNameSpan = document.getElementById('user-name');
+        const calendarGrid = document.getElementById('calendar-grid');
+        
+        const modalContainer = document.getElementById('modal-container');
+        const modalBox = document.getElementById('modal-box');
+        const modalDay = document.getElementById('modal-day');
+        const modalImage = document.getElementById('modal-image');
+        const modalContent = document.getElementById('modal-content');
+        const closeModalButton = document.getElementById('close-modal-button');
+
+        // --- Nuevas referencias de Gemini ---
+        const geminiButton = document.getElementById('gemini-button');
+        const geminiLoading = document.getElementById('gemini-loading');
+        const geminiResultContainer = document.getElementById('gemini-result-container');
+
+        // --- Configuración de la API de Gemini ---
+        // DEJA LA API KEY VACÍA. Se gestionará automáticamente.
+        const apiKey = ""; 
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        const systemPrompt = "Actúa como un elfo del calendario de adviento. Eres juguetón, amigable y te encanta interactuar. Tu objetivo no es solo *dar* información, sino *jugar* con el usuario. Haz preguntas, crea pequeños juegos (como trivias o 'completa la frase') y sé muy alegre. Tus respuestas deben ser concisas y para toda la familia.";
+
+        // --- Lista de Sorpresas (ACTUALIZADA con prompts interactivos) ---
+        const surprises = [
+            { text: "Un chocolate caliente virtual. ☕ ¡Disfrútalo!", img: "https://placehold.co/600x400/D2691E/FFFFFF?text=Chocolate+Caliente", geminiButtonText: "✨ ¿Cómo lo prefieres?", geminiPrompt: "Hazme una pregunta sobre mi chocolate caliente ideal (ej: '¿Te gusta con canela o con nata?') y luego dame una receta basada en esa idea." },
+            { text: "Canta tu villancico favorito... ¡en voz alta! 🎶", img: "https://placehold.co/600x400/FFD700/000000?text=Nota+Musical", geminiButtonText: "✨ Completa la letra", geminiPrompt: "Escribe la primera estrofa de un villancico navideño popular, pero deja dos palabras clave en blanco (ej: 'Noche de ____, noche de ____') y pídeme que las adivine." },
+            { text: "Hoy es un buen día para ver 'Mi Pobre Angelito'. 🏠", img: "https://placehold.co/600x400/00008B/FFFFFF?text=Casa+con+Trampas", geminiButtonText: "✨ ¡Trivia de película!", geminiPrompt: "Dame una pregunta de trivia sobre la película 'Mi Pobre Angelito' (Home Alone) y dame 3 opciones (A, B, C). Al final, revela la respuesta correcta." },
+            { text: "Escribe 3 cosas por las que estés agradecido hoy. 🙏", img: "https://placehold.co/600x400/8A2BE2/FFFFFF?text=Gracias", geminiButtonText: "✨ Juguemos a 'Veo, Veo... Agradecido'", geminiPrompt: "Inicia un juego. Di 'Veo, veo... algo por lo que estar agradecido que sea...' y da una pista (ej: '...algo caliente que bebes'). Pídeme que adivine." },
+            { text: "¡Foto divertida! Hazte un selfie con un filtro navideño. 🎅", img: "https://placehold.co/600x400/FF69B4/FFFFFF?text=Selfie+Time", geminiButtonText: "✨ ¿Qué filtro elijo?", geminiPrompt: "Propón un divertido 'Este o Aquel' para un selfie navideño. (Ej: '¿Prefieres un filtro con cuernos de reno o con gorro de Papá Noel?')." },
+            { text: "Llama a un amigo o familiar solo para saludar.", img: "https://placehold.co/600x400/4682B4/FFFFFF?text=Hola", geminiButtonText: "✨ ¿De qué hablamos?", geminiPrompt: "Dame 3 ideas divertidas para romper el hielo o temas de conversación alegres para iniciar una llamada con un amigo." },
+            { text: "Un bastón de caramelo virtual. ¡Dulce! 🍬", img: "https://placehold.co/600x400/FF0000/FFFFFF?text=Caramelo", geminiButtonText: "✨ ¿Verdadero o Falso?", geminiPrompt: "Dame un dato curioso sobre el bastón de caramelo y pídeme que adivine si es 'Verdadero o Falso'. Luego, revela la respuesta." },
+            { text: "Tómate 5 minutos para estirarte y respirar.", img: "https://placehold.co/600x400/008080/FFFFFF?text=Relax", geminiButtonText: "✨ Guía mi respiración", geminiPrompt: "Guíame con 3 instrucciones de respiración sencillas (ej: '1. Inspira contando hasta 4...')." },
+            { text: "Dibuja un reno. No importa cómo salga. 🦌", img: "https://placehold.co/600x400/8B4513/FFFFFF?text=Reno", geminiButtonText: "✨ ¿Cómo lo llamamos?", geminiPrompt: "¡Ayúdame a ponerle nombre a mi reno dibujado! Dame 3 sugerencias de nombres divertidos para un reno." },
+            { text: "Busca una receta de galletas de jengibre. 🍪", img: "https://placehold.co/600x400/D2691E/FFFFFF?text=Galleta", geminiButtonText: "✨ ¿Qué ingrediente falta?", geminiPrompt: "Dame una lista de 4 ingredientes para galletas de jengibre, pero olvida uno que sea obvio (ej: jengibre). Pídeme que adivine el ingrediente secreto." },
+            { text: "Un copo de nieve único, ¡como tú! ❄️", img: "https://placehold.co/600x400/ADD8E6/000000?text=Copo+de+Nieve", geminiButtonText: "✨ Trivia de nieve", geminiPrompt: "Dame una pregunta de trivia sobre la nieve (con opciones A, B, C) y luego revela la respuesta." },
+            { text: "Dona un juguete o ropa que ya no necesites.", img: "https://placehold.co/600x400/32CD32/FFFFFF?text=Donar", geminiButtonText: "✨ Inspírame a donar", geminiPrompt: "Escribe una frase corta (1-2 líneas) sobre cómo un pequeño gesto de donación puede hacer una gran diferencia." },
+            { text: "Ponte calcetines divertidos hoy.", img: "https://placehold.co/600x400/FFC0CB/000000?text=Calcetines", geminiButtonText: "✨ Completa el poema", geminiPrompt: "Escribe un poema de 4 líneas sobre calcetines navideños, pero deja la última palabra en blanco para que yo la complete." },
+            { text: "Escucha 'All I Want for Christmas Is You'. 🎤", img: "https://placehold.co/600x400/FFD700/000000?text=Hit+Navideño", geminiButtonText: "✨ Adivina la canción", geminiPrompt: "Dame 3-4 palabras clave de la letra de un villancico famoso (que no sea el de Mariah Carey) y pídeme que adivine la canción." },
+            { text: "Un abrazo virtual gigante para ti. 🤗", img: "https://placehold.co/600x400/FF69B4/FFFFFF?text=Abrazo", geminiButtonText: "✨ ¿Abrazo de oso o de elfo?", geminiPrompt: "Pregúntame qué tipo de abrazo virtual prefiero hoy: '¿Un abrazo de oso gigante o un abrazo rápido de elfo juguetón?'." },
+            { text: "Aprende a decir 'Feliz Navidad' en otro idioma.", img: "https://placehold.co/600x400/00008B/FFFFFF?text=Hola+Mundo", geminiButtonText: "✨ Enséñame un idioma", geminiPrompt: "Elige un idioma (ej: japonés, italiano, alemán) y enséñame a decir 'Feliz Navidad' y cómo pronunciarlo de forma simple." },
+            { text: "Decora tu espacio de trabajo con algo festivo.", img: "https://placehold.co/600x400/FF0000/FFFFFF?text=Espumillón", geminiButtonText: "✨ ¿Qué elijo?", geminiPrompt: "Propón una encuesta rápida: '¿Qué decoración DIY prefieres para tu escritorio: un mini-árbol de papel o una guirnalda de clips?'" },
+            { text: "¡Una mandarina! (Virtual, claro). 🍊", img: "https://placehold.co/600x400/FFA500/FFFFFF?text=Vitamina+C", geminiButtonText: "✨ Trivia de frutas", geminiPrompt: "Dame un dato curioso sobre las mandarinas (o clementinas) y pídeme que adivine si es 'Verdadero o Falso'." },
+            { text: "Piensa en tu mejor recuerdo navideño.", img: "https://placehold.co/600x400/8A2BE2/FFFFFF?text=Recuerdo", geminiButtonText: "✨ ¿Olor o Sabor?", geminiPrompt: "Hazme una pregunta para ayudarme a recordar: '¿Qué olor o sabor te recuerda instantáneamente a la Navidad?'." },
+            { text: "Enciende una vela con olor a canela o pino.", img: "https://placehold.co/600x400/D2691E/FFFFFF?text=Vela", geminiButtonText: "✨ Adivina el olor", geminiPrompt: "Describe un olor navideño (ej: 'Soy dulce, especiado y me ponen en el vino caliente') y pídeme que adivine qué es." },
+            { text: "¡Has encontrado un elfo escondido! 🧝", img: "https://placehold.co/600x400/32CD32/FFFFFF?text=Elfo", geminiButtonText: "✨ ¿Dónde se escondió?", geminiPrompt: "Juguemos al escondite. Dame 3 pistas sobre dónde se ha escondido un elfo travieso en una cocina." },
+            { text: "Prepara la lista de regalos... ¡o simplemente relájate!", img: "https://placehold.co/600x400/4682B4/FFFFFF?text=Lista", geminiButtonText: "✨ ¿Regalo hecho o comprado?", geminiPrompt: "Plantea un dilema divertido: 'Si tuvieras que elegir, ¿preferirías recibir un regalo hecho a mano con mucho cariño o el regalo perfecto de una tienda?'" },
+            { text: "¡Casi Navidad! Mira las luces de la calle.", img: "https://placehold.co/600x400/FFD700/000000?text=Luces", geminiButtonText: "✨ ¿Qué ves en las luces?", geminiPrompt: "Pregúntame qué formas veo en las luces de Navidad, como si fueran nubes (ej: '¿Ves un reno, una estrella o un bastón de caramelo?')." },
+            { text: "¡FELIZ NOCHEBUENA! 🎄 La magia está en compartir.", img: "https://placehold.co/600x400/FF0000/FFFFFF?text=Feliz+Navidad", geminiButtonText: "✨ Mi deseo de Nochebuena", geminiPrompt: "Pídeme que piense en un deseo de Nochebuena para alguien más. Luego, genera tú un deseo corto y universal para todos." }
+        ];
+
+        // --- Lógica de la Aplicación ---
+
+        // 1. Manejar el envío del formulario
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Evitar que la página se recargue
+            
+            const nameInput = document.getElementById('name');
+            const emailInput = document.getElementById('email');
+
+            // Validación simple (HTML 'required' ya hace la mayor parte)
+            if (nameInput.value.trim() !== '' && emailInput.value.trim() !== '') {
+                // Mostrar el nombre del usuario
+                userNameSpan.textContent = nameInput.value.trim();
+                
+                // Ocultar formulario y mostrar calendario con animación
+                formContainer.classList.add('opacity-0', 'scale-95');
+                formContainer.classList.add('transition-all', 'duration-500');
+
+                setTimeout(() => {
+                    formContainer.classList.add('hidden');
+                    calendarContainer.classList.remove('hidden');
+                    calendarContainer.classList.add('opacity-0', 'scale-95');
+                    
+                    // Pequeño retardo para que la transición de entrada sea visible
+                    setTimeout(() => {
+                        calendarContainer.classList.remove('opacity-0', 'scale-95');
+                        calendarContainer.classList.add('transition-all', 'duration-500', 'opacity-100', 'scale-100');
+                    }, 50);
+
+                }, 500);
+            }
+        });
+
+        // 2. Generar las puertas del calendario
+        function createCalendar() {
+            const today = new Date();
+            // Para pruebas: cambiar 'today.getDate()' por un número, ej. 25, para abrirlos todos.
+            // O poner 0 para deshabilitar la restricción.
+            const currentDay = today.getMonth() === 11 ? today.getDate() : 0; // Solo activo en Diciembre
+            const openedDays = JSON.parse(localStorage.getItem('openedDays') || '[]');
+
+            for (let i = 1; i <= 24; i++) {
+                const day = i;
+                const surprise = surprises[day - 1];
+                
+                const door = document.createElement('div');
+                door.textContent = day;
+                door.dataset.day = day;
+                
+                let isOpened = openedDays.includes(day);
+                let canBeOpened = day <= currentDay || currentDay === 0; // Permite abrir si es día pasado o si estamos probando (0)
+
+                // Clases base
+                let doorClasses = "aspect-square flex items-center justify-center font-christmas text-5xl rounded-lg shadow-lg transform transition duration-300";
+
+                if (isOpened) {
+                    // Día ya abierto
+                    doorClasses += " bg-yellow-200/50 text-red-900/60 cursor-pointer hover:scale-105";
+                } else if (canBeOpened) {
+                    // Día que se puede abrir hoy
+                    doorClasses += " bg-green-700 text-white cursor-pointer hover:bg-green-600 hover:scale-110 hover:shadow-2xl animate-pulse";
+                } else {
+                    // Día futuro
+                    doorClasses += " bg-gray-600/50 text-gray-400 cursor-not-allowed opacity-70";
+                }
+                
+                door.className = doorClasses;
+
+                // Añadir evento de clic solo si se puede abrir (o ya se abrió)
+                if (canBeOpened || isOpened) {
+                    door.addEventListener('click', () => {
+                        showModal(day, surprise, door);
+                        
+                        // Marcar como abierto
+                        if (!isOpened) {
+                            isOpened = true;
+                            openedDays.push(day);
+                            localStorage.setItem('openedDays', JSON.stringify(openedDays));
+                            
+                            // Actualizar estilo
+                            door.className = "aspect-square flex items-center justify-center font-christmas text-5xl rounded-lg shadow-lg transform transition duration-300 bg-yellow-200/50 text-red-900/60 cursor-pointer hover:scale-105";
+                            door.classList.remove('animate-pulse');
+                        }
+                    });
+                }
+
+                calendarGrid.appendChild(door);
+            }
+        }
+        
+        // --- Nuevas funciones de la API Gemini ---
+        
+        /**
+         * Maneja las solicitudes fetch con reintentos y backoff exponencial.
+         */
+        async function fetchWithBackoff(url, options, retries = 3, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) {
+                        return response;
+                    }
+                    // No reintentar en errores de cliente (4xx)
+                    if (response.status >= 400 && response.status < 500) {
+                        console.error("Error de cliente, no reintentando:", response.status);
+                        return response; // Devolver la respuesta de error
+                    }
+                    // Reintentar en errores de servidor (5xx)
+                    console.warn(`Error de servidor (${response.status}), reintentando... (${i + 1}/${retries})`);
+                } catch (error) {
+                    console.warn(`Error de red, reintentando... (${i + 1}/${retries}):`, error.message);
+                }
+                // Esperar antes de reintentar
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2; // Backoff exponencial
+            }
+            // Si todos los reintentos fallan, lanzar un error
+            throw new Error("No se pudo conectar a la API después de varios intentos.");
+        }
+
+        /**
+         * Llama a la API de Gemini con un prompt.
+         */
+        async function callGeminiApi(prompt) {
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                safetySettings: [
+                    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                    { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                ]
+            };
+
+            const options = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            };
+
+            try {
+                const response = await fetchWithBackoff(GEMINI_API_URL, options);
+                
+                if (!response.ok) {
+                    console.error("La solicitud a la API falló con estado:", response.status);
+                    const errorBody = await response.json();
+                    console.error("Detalles del error:", errorBody);
+                    return "Hubo un error al contactar la IA. Intenta de nuevo.";
+                }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0].text) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                    console.warn("Respuesta inesperada de la API:", result);
+                    if (result.candidates && result.candidates[0].finishReason === 'SAFETY') {
+                        return "La respuesta fue bloqueada por razones de seguridad. Intenta con un texto diferente.";
+                    }
+                    return "No se pudo generar una respuesta.";
+                }
+            } catch (error) {
+                console.error("Error en callGeminiApi:", error);
+                return "Error de conexión. Revisa tu conexión a internet.";
+            }
+        }
+
+
+        // 3. Mostrar el modal (ACTUALIZADO)
+        function showModal(day, surprise, doorElement) {
+            modalDay.textContent = `Día ${day}`;
+            modalContent.textContent = surprise.text;
+            modalImage.src = surprise.img;
+
+            // --- Lógica de Gemini ---
+            // 1. Resetear estado
+            geminiLoading.classList.add('hidden');
+            geminiResultContainer.classList.add('hidden');
+            geminiResultContainer.innerHTML = '';
+            geminiButton.classList.remove('hidden');
+
+            // 2. Configurar botón
+            geminiButton.textContent = surprise.geminiButtonText;
+            
+            // 3. Asignar evento de clic
+            // Usamos .onclick para reemplazar fácilmente el listener anterior
+            geminiButton.onclick = async () => {
+                geminiButton.classList.add('hidden');
+                geminiLoading.classList.remove('hidden');
+
+                const prompt = surprise.geminiPrompt;
+                const result = await callGeminiApi(prompt);
+                
+                // Formatear resultado (reemplazar saltos de línea por <br>)
+                const formattedResult = result.replace(/\n/g, '<br>');
+
+                geminiLoading.classList.add('hidden');
+                geminiResultContainer.innerHTML = formattedResult;
+                geminiResultContainer.classList.remove('hidden');
+            };
+            // --- Fin Lógica Gemini ---
+            
+            modalContainer.classList.remove('hidden');
+            
+            // Animación de entrada del modal
+            setTimeout(() => {
+                modalBox.classList.remove('scale-95', 'opacity-0');
+                modalBox.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        // 4. Ocultar el modal
+        function hideModal() {
+            modalBox.classList.remove('scale-100', 'opacity-100');
+            modalBox.classList.add('scale-95', 'opacity-0');
+
+            // Resetear estado de Gemini al cerrar
+            geminiButton.classList.remove('hidden');
+            geminiLoading.classList.add('hidden');
+            geminiResultContainer.classList.add('hidden');
+            geminiResultContainer.innerHTML = '';
+
+            setTimeout(() => {
+                modalContainer.classList.add('hidden');
+            }, 300); // Esperar a que termine la animación
+        }
+
+        closeModalButton.addEventListener('click', hideModal);
+        // Opcional: cerrar al hacer clic fuera del modal
+        modalContainer.addEventListener('click', function(e) {
+            if (e.target === modalContainer) {
+                hideModal();
+            }
+        });
+
+        // --- Inicialización ---
+        createCalendar();
+
+    </script>
+</body>
+</html>
